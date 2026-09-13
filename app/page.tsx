@@ -1,69 +1,83 @@
-import Image from "next/image";
+"use client";
+
+import { useMemo, useState } from "react";
+
+type Member = { id: number; name: string; role: string };
+type Expense = { id: number; label: string; amount: number; payer: number };
+
+const initialMembers: Member[] = [
+  { id: 1, name: "คุณกมล", role: "Project lead" },
+  { id: 2, name: "คุณนภา", role: "Operations" },
+  { id: 3, name: "คุณธนา", role: "Sales" },
+  { id: 4, name: "คุณฟ้า", role: "Design" },
+];
+
+const initialExpenses: Expense[] = [
+  { id: 1, label: "ค่าที่พัก", amount: 4200, payer: 4 },
+  { id: 2, label: "ค่าทางด่วน", amount: 380, payer: 1 },
+];
+
+const money = new Intl.NumberFormat("th-TH", {
+  style: "currency",
+  currency: "THB",
+  maximumFractionDigits: 0,
+});
 
 export default function Home() {
+  const [members, setMembers] = useState(initialMembers);
+  const [expenses, setExpenses] = useState(initialExpenses);
+  const [distance, setDistance] = useState(486);
+  const [efficiency, setEfficiency] = useState(14);
+  const [fuelPrice, setFuelPrice] = useState(34.5);
+  const [tripName, setTripName] = useState("ทริปท่องเที่ยวประจำปี");
+
+  const fuelCost = useMemo(
+    () => (distance / Math.max(efficiency, 1)) * fuelPrice,
+    [distance, efficiency, fuelPrice],
+  );
+  const otherCost = expenses.reduce((total, expense) => total + expense.amount, 0);
+  const totalCost = fuelCost + otherCost;
+  const perPerson = members.length ? totalCost / members.length : 0;
+
+  const addMember = () => {
+    const nextId = Math.max(...members.map((member) => member.id), 0) + 1;
+    setMembers([...members, { id: nextId, name: `ผู้ร่วมทริป ${nextId}`, role: "New member" }]);
+  };
+
+  const addExpense = () => {
+    const nextId = Math.max(...expenses.map((expense) => expense.id), 0) + 1;
+    setExpenses([...expenses, { id: nextId, label: "ค่าใช้จ่ายใหม่", amount: 0, payer: 1 }]);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="app-shell">
+      <section className="workspace" id="calculator">
+        <header className="topbar">
+          <div className="simple-brand"><span>◒</span><strong>Trip Cost Calculator</strong></div>
+          <div className="top-actions"><span className="status-dot" /> คำนวณอัตโนมัติ <button className="outline-button" onClick={() => window.print()}>พิมพ์สรุปผล <span>↗</span></button></div>
+        </header>
+
+        <div className="content-wrap">
+          <div className="page-heading"><div><p className="kicker">เครื่องคำนวณค่าเดินทางและน้ำมัน</p><h1>เครื่องคำนวณค่าเดินทาง</h1><p className="subheading">กรอกข้อมูลทริปเพื่อหาค่าน้ำมัน ค่าใช้จ่ายรวม และค่าเฉลี่ยที่แต่ละคนควรจ่าย</p></div><div className="assignment-badge"><span>✓</span><div><small>สถานะการคำนวณ</small><strong>พร้อมคำนวณ</strong></div></div></div>
+
+          <div className="trip-title"><input value={tripName} onChange={(event) => setTripName(event.target.value)} aria-label="ชื่อทริป" /><span>ชื่อทริป</span></div>
+
+          <div className="dashboard-grid">
+            <section className="panel inputs-panel">
+              <div className="panel-heading"><div><span className="step-number">01</span><h2>ข้อมูลการเดินทาง</h2></div><span className="required-label">กรอกข้อมูลให้ครบ</span></div>
+              <div className="field-grid"><label>ระยะทางรวม <span>กิโลเมตร</span><div className="input-with-unit"><input type="number" value={distance} onChange={(event) => setDistance(Number(event.target.value))} min="0" /><b>km</b></div></label><label>อัตราสิ้นเปลือง <span>กิโลเมตร / ลิตร</span><div className="input-with-unit"><input type="number" value={efficiency} onChange={(event) => setEfficiency(Number(event.target.value))} min="1" step="0.1" /><b>km/L</b></div></label><label>ราคาน้ำมันต่อลิตร <span>ราคาปัจจุบัน</span><div className="input-with-unit"><input type="number" value={fuelPrice} onChange={(event) => setFuelPrice(Number(event.target.value))} min="0" step="0.5" /><b>฿/L</b></div></label></div>
+              <div className="formula-line"><span>ค่าน้ำมัน</span><strong>{distance} กม. ÷ {efficiency} กม./ลิตร × ฿{fuelPrice.toFixed(2)}</strong><b>{money.format(fuelCost)}</b></div>
+            </section>
+
+            <section className="panel members-panel" id="members"><div className="panel-heading"><div><span className="step-number">02</span><h2>รายชื่อสมาชิกในทริป</h2></div><button className="text-button" onClick={addMember}>＋ เพิ่มสมาชิก</button></div><div className="member-list">{members.map((member, index) => <div className="member-row" key={member.id}><span className="avatar avatar-small">{member.name.slice(0, 1)}</span><div><input className="inline-input" value={member.name} onChange={(event) => setMembers(members.map((item) => item.id === member.id ? { ...item, name: event.target.value } : item))} aria-label="ชื่อสมาชิก" /><small>สมาชิกคนที่ {index + 1}</small></div><span className="member-index">0{index + 1}</span><button className="remove-button" onClick={() => setMembers(members.filter((item) => item.id !== member.id))} aria-label={`ลบ ${member.name}`}>×</button></div>)}</div></section>
+
+            <section className="panel expenses-panel"><div className="panel-heading"><div><span className="step-number">03</span><h2>ค่าใช้จ่ายอื่น ๆ</h2></div><button className="text-button" onClick={addExpense}>＋ เพิ่มรายการ</button></div><div className="expense-list">{expenses.map((expense) => <div className="expense-row" key={expense.id}><div className="expense-icon">฿</div><input className="inline-input" value={expense.label} onChange={(event) => setExpenses(expenses.map((item) => item.id === expense.id ? { ...item, label: event.target.value } : item))} aria-label="รายการค่าใช้จ่าย" /><div className="expense-amount"><span>฿</span><input type="number" value={expense.amount} onChange={(event) => setExpenses(expenses.map((item) => item.id === expense.id ? { ...item, amount: Number(event.target.value) } : item))} aria-label="จำนวนเงิน" /></div><select value={expense.payer} onChange={(event) => setExpenses(expenses.map((item) => item.id === expense.id ? { ...item, payer: Number(event.target.value) } : item))} aria-label="จำนวนผู้จ่าย"><option value={1}>1 คนจ่าย</option><option value={members.length}>{members.length} คนจ่าย</option></select><button className="remove-button" onClick={() => setExpenses(expenses.filter((item) => item.id !== expense.id))} aria-label={`ลบ ${expense.label}`}>×</button></div>)}</div><div className="expense-total"><span>รวมค่าใช้จ่ายอื่น ๆ</span><strong>{money.format(otherCost)}</strong></div></section>
+
+            <section className="summary-card" id="insights"><div className="summary-top"><span className="kicker">ผลลัพธ์การคำนวณ</span><span className="live-pill"><i /> คำนวณแล้ว</span></div><div className="total-cost">{money.format(totalCost)}</div><p>ค่าใช้จ่ายรวมทั้งหมดของทริป</p><div className="cost-breakdown"><div><span><i className="dot fuel-dot" />ค่าน้ำมัน</span><strong>{money.format(fuelCost)}</strong></div><div><span><i className="dot expense-dot" />ค่าใช้จ่ายอื่น ๆ</span><strong>{money.format(otherCost)}</strong></div></div><div className="per-person"><span>ค่าเฉลี่ยที่แต่ละคนควรจ่าย</span><strong>{money.format(perPerson)}</strong></div><button className="summary-button" onClick={() => window.print()}>พิมพ์ผลลัพธ์ <span>→</span></button></section>
+          </div>
+          <footer className="page-footer"><span>เครื่องคำนวณค่าเดินทาง</span><span>สูตรคำนวณ: ค่าน้ำมันรวม + ค่าใช้จ่ายอื่น ๆ ÷ จำนวนสมาชิก</span></footer>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </section>
+    </main>
   );
 }
